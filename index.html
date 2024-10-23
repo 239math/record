@@ -2,8 +2,14 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 모바일 반응형 적용 -->
     <title>나의 오늘</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+        }
         .schedule {
             margin-top: 20px;
             border: 1px solid #000;
@@ -15,11 +21,57 @@
         }
         th, td {
             border: 1px solid #000;
-            padding: 5px;
+            padding: 8px; /* padding 줄임 */
             text-align: center;
         }
         th {
             background-color: #f2f2f2;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #color-buttons {
+            display: flex;
+            flex-wrap: wrap; /* 모바일 환경에서 버튼이 넘치지 않도록 */
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        #color-buttons button {
+            flex: 1; /* 버튼이 동일한 크기로 배치되도록 */
+            min-width: 100px; /* 버튼이 너무 작아지지 않도록 최소 너비 설정 */
+        }
+
+        /* 반응형 웹 적용 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            button {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+            table th, table td {
+                font-size: 12px; /* 모바일에서 글자 크기 줄임 */
+                padding: 5px;
+            }
+            #color-buttons {
+                flex-direction: column; /* 모바일에서는 버튼이 세로로 배치되도록 */
+            }
+        }
+
+        /* 아주 작은 화면(폰)용 */
+        @media (max-width: 480px) {
+            button {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            table th, table td {
+                font-size: 10px;
+                padding: 3px;
+            }
         }
     </style>
 </head>
@@ -40,8 +92,7 @@
     <button style="background-color: white;" onclick="saveSchedules()">저장</button>
     <button style="background-color: white;" onclick="loadSchedules()">불러오기</button>
 
-    <div id="schedule-container">
-    </div>
+    <div id="schedule-container"></div>
 
     <script>
         let scheduleCount = 0;
@@ -65,15 +116,8 @@
             newSchedule.className = 'schedule';
             newSchedule.dataset.date = todayDate;
 
-            const toggleButton = document.createElement('button');
-            toggleButton.textContent = "숨기기";
-            toggleButton.onclick = function() {
-                const table = newSchedule.querySelector('table');
-                table.style.display = table.style.display === 'none' ? 'table' : 'none';
-            };
-
             newSchedule.innerHTML = `
-                <h2>${todayDate}</h2>
+                <h2>${todayDate} <button onclick="toggleScheduleVisibility(this)">숨기기</button></h2>
                 <table>
                     <thead>
                         <tr>
@@ -98,9 +142,14 @@
                 container.removeChild(newSchedule);
             };
 
-            newSchedule.appendChild(toggleButton);
             newSchedule.appendChild(deleteButton);
-            container.appendChild(newSchedule);
+            container.insertBefore(newSchedule, container.firstChild); // 새 스케줄을 맨 위에 추가
+        }
+
+        function toggleScheduleVisibility(button) {
+            const table = button.closest('.schedule').querySelector('table');
+            table.style.display = table.style.display === 'none' ? 'table' : 'none';
+            button.textContent = table.style.display === 'none' ? '보이기' : '숨기기';
         }
 
         function createRows() {
@@ -140,10 +189,16 @@
             if (textInputMode) {
                 const currentInput = prompt("내용을 입력하세요:", cell.innerText);
                 if (currentInput !== null) {
-                    cell.innerText = currentInput;
+                    cell.innerText = currentInput; // 사용자 입력으로 텍스트 변경
                 }
             } else {
+                // 색상 변경
                 cell.style.backgroundColor = cell.style.backgroundColor === currentColor ? '' : currentColor;
+
+                // 클릭한 셀에 텍스트를 설정하지 않도록 함
+                if (cell.innerText.trim() === '') {
+                    cell.innerText = ''; // 빈 문자열 유지 (기존 텍스트를 비운다)
+                }
             }
         }
 
@@ -153,6 +208,7 @@
 
             scheduleElements.forEach(schedule => {
                 const date = schedule.dataset.date;
+                const isHidden = schedule.querySelector('table').style.display === 'none'; // 숨김 상태 저장
                 const tableRows = schedule.querySelectorAll('tbody tr');
                 const scheduleData = [];
 
@@ -160,86 +216,82 @@
                     const cells = row.querySelectorAll('td');
                     const rowData = [];
                     cells.forEach(cell => {
-                        // 텍스트가 없으면 빈 문자열을 저장하고, 색상만 저장
-                        rowData.push(cell.innerText ? cell.innerText : cell.style.backgroundColor);
+                        const cellText = cell.innerText.trim();
+                        const cellBgColor = cell.style.backgroundColor;
+
+                        // 배경색과 텍스트를 모두 저장
+                        rowData.push({
+                            text: cellText,
+                            bgColor: cellBgColor ? cellBgColor : ''
+                        });
                     });
                     scheduleData.push(rowData);
                 });
 
-                schedules.push({ date, data: scheduleData });
+                schedules.push({ date, isHidden, data: scheduleData });
             });
 
             localStorage.setItem('schedules', JSON.stringify(schedules));
-            alert('일정이 저장되었습니다!');
         }
 
         function loadSchedules() {
-            const schedules = JSON.parse(localStorage.getItem('schedules')) || [];
+            const savedSchedules = JSON.parse(localStorage.getItem('schedules'));
             const container = document.getElementById('schedule-container');
-            container.innerHTML = ''; // 이전 일정을 지움
+            container.innerHTML = '';
 
-            schedules.forEach(schedule => {
-                const newSchedule = document.createElement('div');
-                newSchedule.className = 'schedule';
-                newSchedule.dataset.date = schedule.date;
+            if (savedSchedules && savedSchedules.length > 0) {
+                savedSchedules.forEach(schedule => {
+                    const newSchedule = document.createElement('div');
+                    newSchedule.className = 'schedule';
+                    newSchedule.dataset.date = schedule.date;
 
-                const toggleButton = document.createElement('button');
-                toggleButton.textContent = "숨기기";
-                toggleButton.onclick = function() {
-                    const table = newSchedule.querySelector('table');
-                    table.style.display = table.style.display === 'none' ? 'table' : 'none';
-                };
+                    const tableDisplay = schedule.isHidden ? 'none' : 'table';
 
-                newSchedule.innerHTML = `
-                    <h2>${schedule.date}</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>시간</th>
-                                <th>10분</th>
-                                <th>20분</th>
-                                <th>30분</th>
-                                <th>40분</th>
-                                <th>50분</th>
-                                <th>60분</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${createRowsFromData(schedule.data)}
-                        </tbody>
-                    </table>
-                `;
+                    newSchedule.innerHTML = `
+                        <h2>${schedule.date} <button onclick="toggleScheduleVisibility(this)">${schedule.isHidden ? '보이기' : '숨기기'}</button></h2>
+                        <table style="display: ${tableDisplay};">
+                            <thead>
+                                <tr>
+                                    <th>시간</th>
+                                    <th>10분</th>
+                                    <th>20분</th>
+                                    <th>30분</th>
+                                    <th>40분</th>
+                                    <th>50분</th>
+                                    <th>60분</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${loadRows(schedule.data)}
+                            </tbody>
+                        </table>
+                    `;
 
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = '삭제';
-                deleteButton.onclick = function() {
-                    container.removeChild(newSchedule);
-                };
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = '삭제';
+                    deleteButton.onclick = function () {
+                        container.removeChild(newSchedule);
+                    };
 
-                newSchedule.appendChild(toggleButton);
-                newSchedule.appendChild(deleteButton);
-                container.appendChild(newSchedule);
-            });
+                    newSchedule.appendChild(deleteButton);
+                    container.appendChild(newSchedule);
+                });
+            }
         }
 
-        function createRowsFromData(data) {
+        function loadRows(data) {
             let rows = '';
+
             data.forEach(rowData => {
-                rows += `
-                    <tr>
-                        <td>${rowData[0]}</td>
-                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[1] || ''}">${rowData[1] ? '' : ''}</td>
-                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[2] || ''}">${rowData[2] ? '' : ''}</td>
-                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[3] || ''}">${rowData[3] ? '' : ''}</td>
-                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[4] || ''}">${rowData[4] ? '' : ''}</td>
-                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[5] || ''}">${rowData[5] ? '' : ''}</td>
-                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[6] || ''}">${rowData[6] ? '' : ''}</td>
-                    </tr>
-                `;
+                rows += '<tr>';
+                rowData.forEach(cellData => {
+                    rows += `<td style="background-color: ${cellData.bgColor}" onclick="handleCellClick(this)">${cellData.text}</td>`;
+                });
+                rows += '</tr>';
             });
+
             return rows;
         }
     </script>
 </body>
 </html>
-
