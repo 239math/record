@@ -2,15 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나의 오늘</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-
         .schedule {
             margin-top: 20px;
             border: 1px solid #000;
@@ -28,100 +21,55 @@
         th {
             background-color: #f2f2f2;
         }
-
-        /* 모바일 친화적 스타일 */
-        #color-buttons, #textInputButton, button {
-            display: flex;
-            flex-direction: column; /* 세로 방향으로 배치 */
-            align-items: center;
-            margin: 10px 0;
-        }
-
-        button {
-            width: 100%; /* 버튼을 가로로 꽉 채움 */
-            padding: 10px;
-            font-size: 16px; /* 글씨 크기 */
-        }
-
-        @media (min-width: 600px) {
-            #color-buttons, #textInputButton, button {
-                flex-direction: row; /* 넓은 화면에서는 가로로 배치 */
-            }
-            button {
-                width: auto; /* 버튼 크기를 자동으로 조정 */
-                margin: 0 5px; /* 버튼 간 간격 */
-            }
-        }
     </style>
 </head>
 <body>
     <h1>나의 오늘</h1>
     
-    <!-- 색칠하기 버튼 -->
     <div id="color-buttons">
         <button style="background-color: lightblue;" onclick="setColor('lightblue')">파란색</button>
         <button style="background-color: lightgreen;" onclick="setColor('lightgreen')">초록색</button>
         <button style="background-color: lightcoral;" onclick="setColor('lightcoral')">빨간색</button>
         <button style="background-color: lightgoldenrodyellow;" onclick="setColor('lightgoldenrodyellow')">노란색</button>
         <button style="background-color: lightgray;" onclick="setColor('lightgray')">회색</button>
-        <button onclick="setColor('')">지우기</button> <!-- 색 지우기 버튼 추가 -->
+        <button onclick="setColor('')">지우기</button>
     </div>
 
-    <!-- 텍스트 입력 버튼 -->
     <button id="textInputButton" style="background-color: white;" onclick="toggleTextInput()">OFF</button>
-
-    <!-- 새로운 일과 기록표 생성 버튼 -->
     <button style="background-color: white;" onclick="addNewSchedule()">새로운 일과 기록표 추가</button>
+    <button style="background-color: white;" onclick="saveSchedules()">저장</button>
+    <button style="background-color: white;" onclick="loadSchedules()">불러오기</button>
 
-    <!-- 생성된 일과 기록표 영역 -->
     <div id="schedule-container">
-        <!-- 여기에 동적으로 새로운 기록표가 추가될 예정 -->
     </div>
 
     <script>
         let scheduleCount = 0;
-        let textInputMode = false; // 텍스트 입력 모드 상태
+        let textInputMode = false;
+        let currentColor = 'lightblue'; 
 
-        // 페이지 로드 시 저장된 상태 복원
-        window.onload = function() {
-            const savedTextInputMode = localStorage.getItem('textInputMode');
-            if (savedTextInputMode === 'true') {
-                textInputMode = true;
-                toggleTextInput(false); // 초기 상태 반영
-            }
-        };
-
-        // 오늘 날짜를 6자리 숫자로 반환하는 함수
         function getCurrentDate() {
             const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');  // 일
-            const mm = String(today.getMonth() + 1).padStart(2, '0');  // 월
-            const yyyy = today.getFullYear().toString().slice(2);  // 연도 (끝 두 자리)
-            return `${dd}${mm}${yyyy}`;  // 형식: 일월연도
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear().toString().slice(2);
+            return `${dd}${mm}${yyyy}`;
         }
 
-        // 새로운 일과 기록표 추가 함수
         function addNewSchedule() {
             scheduleCount++;
             const container = document.getElementById('schedule-container');
-
-            // 오늘 날짜 가져오기
             const todayDate = getCurrentDate();
 
-            // 새로운 스케줄 영역 추가
             const newSchedule = document.createElement('div');
             newSchedule.className = 'schedule';
+            newSchedule.dataset.date = todayDate;
 
-            // 접기/펼치기 버튼
             const toggleButton = document.createElement('button');
             toggleButton.textContent = "숨기기";
             toggleButton.onclick = function() {
                 const table = newSchedule.querySelector('table');
-                if (table.style.display === 'none') {
-                    table.style.display = 'table';  // 테이블 보이기
-                } else {
-                    table.style.display = 'none';   // 테이블 숨기기
-                }
+                table.style.display = table.style.display === 'none' ? 'table' : 'none';
             };
 
             newSchedule.innerHTML = `
@@ -144,16 +92,14 @@
                 </table>
             `;
 
-            // 삭제 버튼
             const deleteButton = document.createElement('button');
             deleteButton.textContent = '삭제';
             deleteButton.onclick = function() {
                 container.removeChild(newSchedule);
             };
 
-            newSchedule.appendChild(toggleButton); // 접기/펼치기 버튼 추가
-            newSchedule.appendChild(deleteButton); // 삭제 버튼 추가
-
+            newSchedule.appendChild(toggleButton);
+            newSchedule.appendChild(deleteButton);
             container.appendChild(newSchedule);
         }
 
@@ -179,47 +125,119 @@
             return rows;
         }
 
-        let currentColor = 'lightblue';  // 기본 색상
-
-        // 색상 설정 함수
         function setColor(color) {
             currentColor = color;
         }
 
-        // 텍스트 입력 모드 전환 함수
-        function toggleTextInput(shouldSave = true) {
-            textInputMode = !textInputMode; // 모드 전환
+        function toggleTextInput() {
+            textInputMode = !textInputMode;
             const button = document.getElementById('textInputButton');
+            button.textContent = textInputMode ? 'ON' : 'OFF';
+            button.style.backgroundColor = textInputMode ? 'red' : 'white';
+        }
+
+        function handleCellClick(cell) {
             if (textInputMode) {
-                button.textContent = 'ON'; // 버튼 텍스트 변경
-                button.style.backgroundColor = 'red'; // 버튼 색상 변경
-                alert("텍스트 입력 모드가 활성화되었습니다. 셀을 클릭하여 내용을 입력하세요.");
+                const currentInput = prompt("내용을 입력하세요:", cell.innerText);
+                if (currentInput !== null) {
+                    cell.innerText = currentInput;
+                }
             } else {
-                button.textContent = 'OFF'; // 버튼 텍스트 변경
-                button.style.backgroundColor = 'white'; // 버튼 색상 변경
-                alert("텍스트 입력 모드가 비활성화되었습니다.");
-            }
-            if (shouldSave) {
-                localStorage.setItem('textInputMode', textInputMode); // 상태 저장
+                cell.style.backgroundColor = cell.style.backgroundColor === currentColor ? '' : currentColor;
             }
         }
 
-        // 셀 클릭 처리 함수
-        function handleCellClick(cell) {
-            if (textInputMode) {
-                const currentInput = prompt("내용을 입력하세요:", cell.innerText); // 입력창 표시
-                if (currentInput !== null) {
-                    cell.innerText = currentInput; // 입력한 내용을 셀에 추가
-                }
-            } else {
-                if (cell.style.backgroundColor === currentColor) {
-                    // 이미 같은 색으로 칠해져 있으면 지우기
-                    cell.style.backgroundColor = '';
-                } else {
-                    // 색칠 모드일 때
-                    cell.style.backgroundColor = currentColor;
-                }
-            }
+        function saveSchedules() {
+            const schedules = [];
+            const scheduleElements = document.querySelectorAll('.schedule');
+
+            scheduleElements.forEach(schedule => {
+                const date = schedule.dataset.date;
+                const tableRows = schedule.querySelectorAll('tbody tr');
+                const scheduleData = [];
+
+                tableRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const rowData = [];
+                    cells.forEach(cell => {
+                        // 텍스트가 없으면 빈 문자열을 저장하고, 색상만 저장
+                        rowData.push(cell.innerText ? cell.innerText : cell.style.backgroundColor);
+                    });
+                    scheduleData.push(rowData);
+                });
+
+                schedules.push({ date, data: scheduleData });
+            });
+
+            localStorage.setItem('schedules', JSON.stringify(schedules));
+            alert('일정이 저장되었습니다!');
+        }
+
+        function loadSchedules() {
+            const schedules = JSON.parse(localStorage.getItem('schedules')) || [];
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = ''; // 이전 일정을 지움
+
+            schedules.forEach(schedule => {
+                const newSchedule = document.createElement('div');
+                newSchedule.className = 'schedule';
+                newSchedule.dataset.date = schedule.date;
+
+                const toggleButton = document.createElement('button');
+                toggleButton.textContent = "숨기기";
+                toggleButton.onclick = function() {
+                    const table = newSchedule.querySelector('table');
+                    table.style.display = table.style.display === 'none' ? 'table' : 'none';
+                };
+
+                newSchedule.innerHTML = `
+                    <h2>${schedule.date}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>시간</th>
+                                <th>10분</th>
+                                <th>20분</th>
+                                <th>30분</th>
+                                <th>40분</th>
+                                <th>50분</th>
+                                <th>60분</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${createRowsFromData(schedule.data)}
+                        </tbody>
+                    </table>
+                `;
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '삭제';
+                deleteButton.onclick = function() {
+                    container.removeChild(newSchedule);
+                };
+
+                newSchedule.appendChild(toggleButton);
+                newSchedule.appendChild(deleteButton);
+                container.appendChild(newSchedule);
+            });
+        }
+
+        function createRowsFromData(data) {
+            let rows = '';
+            data.forEach(rowData => {
+                rows += `
+                    <tr>
+                        <td>${rowData[0]}</td>
+                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[1] || ''}">${rowData[1] ? '' : ''}</td>
+                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[2] || ''}">${rowData[2] ? '' : ''}</td>
+                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[3] || ''}">${rowData[3] ? '' : ''}</td>
+                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[4] || ''}">${rowData[4] ? '' : ''}</td>
+                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[5] || ''}">${rowData[5] ? '' : ''}</td>
+                        <td onclick="handleCellClick(this)" style="background-color: ${rowData[6] || ''}">${rowData[6] ? '' : ''}</td>
+                    </tr>
+                `;
+            });
+            return rows;
         }
     </script>
 </body>
