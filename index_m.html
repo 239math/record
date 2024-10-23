@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 모바일 대응을 위한 메타 태그 추가 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나의 오늘</title>
     <style>
         body {
@@ -81,6 +81,15 @@
     <script>
         let scheduleCount = 0;
         let textInputMode = false; // 텍스트 입력 모드 상태
+
+        // 페이지 로드 시 저장된 상태 복원
+        window.onload = function() {
+            const savedTextInputMode = localStorage.getItem('textInputMode');
+            if (savedTextInputMode === 'true') {
+                textInputMode = true;
+                toggleTextInput(false); // 초기 상태 반영
+            }
+        };
 
         // 오늘 날짜를 6자리 숫자로 반환하는 함수
         function getCurrentDate() {
@@ -178,7 +187,7 @@
         }
 
         // 텍스트 입력 모드 전환 함수
-        function toggleTextInput() {
+        function toggleTextInput(shouldSave = true) {
             textInputMode = !textInputMode; // 모드 전환
             const button = document.getElementById('textInputButton');
             if (textInputMode) {
@@ -189,6 +198,9 @@
                 button.textContent = 'OFF'; // 버튼 텍스트 변경
                 button.style.backgroundColor = 'white'; // 버튼 색상 변경
                 alert("텍스트 입력 모드가 비활성화되었습니다.");
+            }
+            if (shouldSave) {
+                localStorage.setItem('textInputMode', textInputMode); // 상태 저장
             }
         }
 
@@ -212,3 +224,4 @@
     </script>
 </body>
 </html>
+
