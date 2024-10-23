@@ -34,9 +34,13 @@
         <button style="background-color: lightgoldenrodyellow;" onclick="setColor('lightgoldenrodyellow')">노란색</button>
         <button style="background-color: lightgray;" onclick="setColor('lightgray')">회색</button>
         <button onclick="setColor('')">지우기</button> <!-- 색 지우기 버튼 추가 -->
-        
+    </div>
+
+    <!-- 텍스트 입력 버튼 -->
+    <button id="textInputButton" style="background-color: white;" onclick="toggleTextInput()">OFF</button>
+
     <!-- 새로운 일과 기록표 생성 버튼 -->
-    <button style="background-color: white;" button onclick="addNewSchedule()">새로운 일과 기록표 추가</button>
+    <button style="background-color: white;" onclick="addNewSchedule()">새로운 일과 기록표 추가</button>
 
     <!-- 생성된 일과 기록표 영역 -->
     <div id="schedule-container">
@@ -45,6 +49,7 @@
 
     <script>
         let scheduleCount = 0;
+        let textInputMode = false; // 텍스트 입력 모드 상태
 
         // 오늘 날짜를 6자리 숫자로 반환하는 함수
         function getCurrentDate() {
@@ -66,6 +71,19 @@
             // 새로운 스케줄 영역 추가
             const newSchedule = document.createElement('div');
             newSchedule.className = 'schedule';
+
+            // 접기/펼치기 버튼
+            const toggleButton = document.createElement('button');
+            toggleButton.textContent = "숨기기";
+            toggleButton.onclick = function() {
+                const table = newSchedule.querySelector('table');
+                if (table.style.display === 'none') {
+                    table.style.display = 'table';  // 테이블 보이기
+                } else {
+                    table.style.display = 'none';   // 테이블 숨기기
+                }
+            };
+
             newSchedule.innerHTML = `
                 <h2>${todayDate}</h2>
                 <table>
@@ -84,16 +102,18 @@
                         ${createRows()}
                     </tbody>
                 </table>
-
             `;
- const deleteButton = document.createElement('button');
-    deleteButton.textContent = '삭제';
-    deleteButton.onclick = function() {
-        container.removeChild(newSchedule);
-    };
-    newSchedule.appendChild(deleteButton); // 여기서 추가
 
-    container.appendChild(newSchedule);
+            // 삭제 버튼
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = '삭제';
+            deleteButton.onclick = function() {
+                container.removeChild(newSchedule);
+            };
+
+            newSchedule.appendChild(toggleButton); // 접기/펼치기 버튼 추가
+            newSchedule.appendChild(deleteButton); // 삭제 버튼 추가
+
             container.appendChild(newSchedule);
         }
 
@@ -126,14 +146,35 @@
             currentColor = color;
         }
 
+        // 텍스트 입력 모드 전환 함수
+        function toggleTextInput() {
+            textInputMode = !textInputMode; // 모드 전환
+            const button = document.getElementById('textInputButton');
+            if (textInputMode) {
+                button.textContent = 'ON'; // 버튼 텍스트 변경
+                button.style.backgroundColor = 'red'; // 버튼 색상 변경
+                           } else {
+                button.textContent = 'OFF'; // 버튼 텍스트 변경
+                button.style.backgroundColor = 'white'; // 버튼 색상 변경
+              
+            }
+        }
+
         // 셀 클릭 처리 함수
         function handleCellClick(cell) {
-            if (cell.style.backgroundColor === currentColor) {
-                // 이미 같은 색으로 칠해져 있으면 지우기
-                cell.style.backgroundColor = '';
+            if (textInputMode) {
+                const currentInput = prompt("내용을 입력하세요:", cell.innerText); // 입력창 표시
+                if (currentInput !== null) {
+                    cell.innerText = currentInput; // 입력한 내용을 셀에 추가
+                }
             } else {
-                // 색칠 모드일 때
-                cell.style.backgroundColor = currentColor;
+                if (cell.style.backgroundColor === currentColor) {
+                    // 이미 같은 색으로 칠해져 있으면 지우기
+                    cell.style.backgroundColor = '';
+                } else {
+                    // 색칠 모드일 때
+                    cell.style.backgroundColor = currentColor;
+                }
             }
         }
     </script>
